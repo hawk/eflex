@@ -1,0 +1,49 @@
+
+In order to build eflex you need to have Erlang/OTP installed on your
+system. It can be downloaded from www.erlang.org.
+
+Ensure that the Erlang application wx is installed properly. This can
+be done by issuing the command "wx:new()." in the Erlang shell. Do not
+forget to enter the trailing dot before you press enter. There should
+not be any error printouts. It could look like this:
+
+    % erl
+    Erlang R13B03 (erts-5.7.4) [64-bit] [smp:4:4] [rq:4] [async-threads:0] [kernel-poll:false]
+    
+    Eshell V5.7.4  (abort with ^G)
+    1> wx:new().
+    {wx_ref,0,wx,[]}
+    2> halt().
+    % 
+
+Build the eflex tool with
+
+    cd eflex
+    make
+
+or
+
+   eflex/bin/eflex --make
+
+Now you can start the tool with
+
+    eflex/bin/eflex
+
+If you just are curious and want to see how a standalone installation
+of eflex will look like, you can do that with
+
+   eflex/bin/eflex --install
+
+If you want to create a self contained standalone installation of the
+eflex tool, you can create that with
+
+   eflex/bin/eflex --install TargetDir
+
+Then the given TargetDir directory will be created for you. It will
+contain the eflex tool as well as a stripped Erlang runtime system. It
+is possible to move the entire standalone system on TargetDir to
+another location without any re-installation.
+
+The tool in the new installation can be started with
+
+   TargetDir/bin/eflex

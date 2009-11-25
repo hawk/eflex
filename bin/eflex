@@ -1,0 +1,76 @@
+#! /usr/bin/env escript
+%% -*- erlang -*-
+
+main([]) ->
+    AppDir = ensure_app_dir(true),
+    EbinDir = filename:join([AppDir, "ebin"]),
+    Cmd = "erl -smp enable -detached -s eflex -pa " ++ EbinDir ++ " -emu_args",
+    %% io:format("Cmd: ~p\n", [Cmd]),
+    os:cmd(Cmd);
+main(["--help"]) ->
+    AppDir = ensure_app_dir(true),
+    File = filename:join([AppDir, "README"]),
+    case file:read_file(File) of
+	{ok, Bin} ->
+	    io:format("~s\n", [binary_to_list(Bin)]);
+	{error, Reason} ->
+	    io:format("~s: ~s\n", [File, file:format_error(Reason)]),
+	    halt(3)
+    end;
+main(["--make"]) ->
+    AppDir = ensure_app_dir(true),
+    SrcDir = filename:join([AppDir, "src"]),
+    ok = file:set_cwd(SrcDir),
+    make:all([debug_info,{outdir,"../ebin"}]);
+main(["--install" |  TargetDir]) ->
+    AppDir = ensure_app_dir(true),
+    LibDir = filename:dirname(AppDir),    
+    AbsName = filename:absname(escript:script_name()),
+    Sys = {sys, [{lib_dirs, [LibDir]},
+		 {escript, AbsName, [{incl_cond, include}]},
+		 {app, crypto, [{incl_cond, exclude}]},
+		 {app, erts, [{incl_cond, exclude}]},
+		 {app, hipe, [{incl_cond, exclude}]},
+		 {app, reltool, [{incl_cond, exclude}]},
+		 {app, tools, [{incl_cond, exclude}]},
+		 {profile, standalone},
+		 {excl_sys_filters,{add, ["^bin/(epmd|start.boot)(|\\.exe)$",
+                                "^erts.*/bin/(beam|epmd|heart)(|\\.exe)$"]}}]},
+    {ok, Spec} = reltool:get_target_spec([Sys]),
+    case TargetDir of
+	[] ->
+	    io:format("Spec: ~p\n", [Spec]),
+	    timer:sleep(1);
+	_ ->
+	    ok = reltool:eval_target_spec(Spec, code:root_dir(), TargetDir)
+    end,
+    ok;
+main(_) ->
+    usage().
+
+usage() ->
+    Name = escript:script_name(),
+    Base = filename:basename(Name),
+    io:format("usage: ~s                     (run the tool)\n", [Base]),
+    io:format("usage: ~s --help              (display the users guide)\n", [Base]),
+    io:format("usage: ~s --make              (build the tool) \n", [Base]),
+    io:format("usage: ~s --install           (dry run of standalone installation)\n", [Base]),
+    io:format("usage: ~s --install TargetDir (create a standalone installation)\n", [Base]),
+    halt(1).
+
+ensure_app_dir(Retry) ->
+    case code:lib_dir(eflex) of
+	{error, _Reason} when Retry =:= true ->
+	    %% Try to add eflex/ebin to the code path
+	    AbsName = filename:absname(escript:script_name()),
+	    AppDir = filename:dirname(filename:dirname(AbsName)),
+	    EbinDir = filename:join([AppDir, "ebin"]),
+	    %% io:format("~s: Add directory ~p to code path\n", [Name, EbinDir]),
+	    true = code:add_patha(EbinDir),
+	    ensure_app_dir(false);
+	{error, Reason} ->
+	    io:format("Illegal application directory: ~p\n", [Reason]),
+	    halt(2);
+	AppDir ->
+	    AppDir
+    end.
