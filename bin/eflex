@@ -22,7 +22,7 @@ main(["--make"]) ->
     SrcDir = filename:join([AppDir, "src"]),
     ok = file:set_cwd(SrcDir),
     make:all([debug_info,{outdir,"../ebin"}]);
-main(["--install" |  TargetDir]) ->
+main(["--install" |  InstallDir]) ->
     AppDir = ensure_app_dir(true),
     LibDir = filename:dirname(AppDir),    
     AbsName = filename:absname(escript:script_name()),
@@ -37,12 +37,12 @@ main(["--install" |  TargetDir]) ->
 		 {excl_sys_filters,{add, ["^bin/(epmd|start.boot)(|\\.exe)$",
                                 "^erts.*/bin/(beam|epmd|heart)(|\\.exe)$"]}}]},
     {ok, Spec} = reltool:get_target_spec([Sys]),
-    case TargetDir of
+    case InstallDir of
 	[] ->
 	    io:format("Spec: ~p\n", [Spec]),
 	    timer:sleep(1);
 	_ ->
-	    ok = reltool:eval_target_spec(Spec, code:root_dir(), TargetDir)
+	    ok = reltool:eval_target_spec(Spec, code:root_dir(), InstallDir)
     end,
     ok;
 main(_) ->
