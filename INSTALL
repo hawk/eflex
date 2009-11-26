@@ -37,13 +37,12 @@ of eflex will look like, you can do that with
 If you want to create a self contained standalone installation of the
 eflex tool, you can create that with
 
-   eflex/bin/eflex --install TargetDir
+   eflex/bin/eflex --install InstallDir
 
-Then the given TargetDir directory will be created for you. It will
-contain the eflex tool as well as a stripped Erlang runtime system. It
-is possible to move the entire standalone system on TargetDir to
-another location without any re-installation.
+The given InstallDir will contain the eflex tool as well as a stripped
+Erlang runtime system. It is possible to move the entire standalone
+system on InstallDir to another location without any re-installation.
 
 The tool in the new installation can be started with
 
-   TargetDir/bin/eflex
+   InstallDir/bin/eflex
