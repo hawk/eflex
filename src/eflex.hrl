@@ -1,3 +1,10 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Copyright (c) 2009 Hakan Mattsson
+%%
+%% See the file "LICENSE" for information on usage and redistribution
+%% of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -define(APPLICATION, eflex).
 
 -define(DATE_ACT,      	 "Date").

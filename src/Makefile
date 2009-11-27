@@ -1,4 +1,9 @@
-export ERL_LIBS := /opt/local/pgm/erlang-extra-R12B/lib
+######################################################################
+## Copyright (c) 2009 Hakan Mattsson
+##
+## See the file "LICENSE" for information on usage and redistribution
+## of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+######################################################################
 
 ESRC = .
 EGEN = gen
@@ -6,9 +11,8 @@ EBIN = ../ebin
 ERLC = erlc
 ERL_PATH =
 ERL_FLAGS = -smp
-#-pa /opt/local/pgm/otp_R12B-5/lib/erlang/lib/wx-0.97.1119/ebin
 ERL_COMPILE_FLAGS = +warn_unused_vars +debug_info 
-EFLEX_BOOT_FLAGS=-pa ../../eflex/ebin -boot start_sasl -sasl errlog_type error
+EFLEX_BOOT_FLAGS = -pa ../../eflex/ebin -boot start_sasl -sasl errlog_type error
 
 ERL_MODULES = \
 		eflex \

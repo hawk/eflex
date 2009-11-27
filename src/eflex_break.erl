@@ -1,10 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% File    : eflex_break.erl
-%%% Author  : Dan Gudmundsson <dan.gudmundsson@ericsson.com>
-%%% Description : 
-%%%
-%%% Created : 16 Mar 2009 by Dan Gudmundsson <dan.gudmundsson@ericsson.com>
-%%%-------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Copyright (c) 2009 Dan Gudmundsson
+%%
+%% See the file "LICENSE" for information on usage and redistribution
+%% of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -module(eflex_break).
 
 -compile(export_all).

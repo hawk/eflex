@@ -2,6 +2,24 @@
 %% -*- erlang -*-
 %%! -smp enable
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Copyright (c) 2009 Hakan Mattsson
+%%
+%% See the file "LICENSE" for information on usage and redistribution
+%% of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+usage() ->
+    ThisEscript = filename:basename(resolved_script_name()),
+    io:format("Eflex - a flextime calculation tool implemented with Erlang/OTP \n", []),
+    io:format("\nusage:\n", []),
+    io:format("    ~s                     (run the graphical tool)\n",             [ThisEscript]),
+    io:format("    ~s --help              (display the users guide)\n",            [ThisEscript]),
+    io:format("    ~s --make              (build the tool) \n",                    [ThisEscript]),
+    io:format("    ~s --install           (dry run of standalone installation)\n", [ThisEscript]),
+    io:format("    ~s --install TargetDir (create a standalone installation)\n",   [ThisEscript]),
+    halt(1).
+
 main([]) ->
     ensure_app_dir(true),
     eflex:start();
@@ -50,14 +68,9 @@ main(["--install"  = Opt|  InstallDir]) ->
 main(_) ->
     usage().
 
-usage() ->
-    ThisEscript = filename:basename(resolved_script_name()),
-    io:format("usage: ~s                     (run the tool)\n", [ThisEscript]),
-    io:format("usage: ~s --help              (display the users guide)\n", [ThisEscript]),
-    io:format("usage: ~s --make              (build the tool) \n", [ThisEscript]),
-    io:format("usage: ~s --install           (dry run of standalone installation)\n", [ThisEscript]),
-    io:format("usage: ~s --install TargetDir (create a standalone installation)\n", [ThisEscript]),
-    halt(1).
+fatal_error(RetCode, Format, Args) ->
+    io:format(Format, Args),
+    halt(RetCode).
 
 require_app(App, Opt) ->
     case code:lib_dir(App) of
@@ -103,7 +116,3 @@ do_resolve_path([H | T], ResolvedPath) ->
     end;
 do_resolve_path([], ResolvedPath) ->
     ResolvedPath.
-
-fatal_error(RetCode, Format, Args) ->
-    io:format(Format, Args),
-    halt(RetCode).
