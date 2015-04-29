@@ -6,32 +6,43 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -module(eflex).
--compile([export_all]).
-
+-export([main/1]).
 -include("eflex.hrl").
 
+usage() ->
+    io:format("Eflex - a flextime calculation tool implemented with Erlang/OTP \n"),
+    io:format("\nusage:\n"),
+    io:format("    eflex                     (run the graphical tool)\n"),
+    halt(1).
+
+main([]) -> start();
+main(["--help"]) ->
+    File = "README.md",
+    case file:read_file(File) of
+	{ok, Bin} ->
+	    io:format("~s\n", [binary_to_list(Bin)]);
+	{error, Reason} ->
+	    fatal_error(3, "~s: ~s\n", [File, file:format_error(Reason)])
+    end;
+main(_) ->
+    usage().
+
+fatal_error(RetCode, Format, Args) ->
+    io:format(Format, Args),
+    halt(RetCode).
+
+
 start() ->
-    %% start([{auto_increment, 3}]). % Add 3 days for each mouse move
     start([]).
 
 start(Options) ->
     process_flag(trap_exit, true),
-
     Pid = start_link(Options),
     receive
 	{'EXIT', Pid, Reason} ->
 	    io:format("EXIT: ~p\n", [Reason]),
 	    init:stop(1)
     end.
-
-%% app_start_link(KeyVals) ->
-%%     OldKeyVals = application:get_all_env(?APPLICATION),
-%%     [ok = application:unset_env(?APPLICATION, Key) ||
-%% 	{Key, _} <- OldKeyVals,
-%% 	Key =/= included_applications],
-%%     [ok = application:set_env(?APPLICATION, Key, Val) ||
-%% 	{Key, Val} <- KeyVals],
-%%     application:start(?APPLICATION).
 
 start_link(Options) ->
     eflex_wx:start_link(Options).
