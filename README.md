@@ -1,5 +1,5 @@
-
 Eflex - a flextime calculation tool implemented with Erlang/OTP
+---------------------------------------------------------------
 
 Start the tool with the command
 
