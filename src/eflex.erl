@@ -13,9 +13,14 @@ usage() ->
     io:format("Eflex - a flextime calculation tool implemented with Erlang/OTP \n"),
     io:format("\nusage:\n"),
     io:format("    eflex                     (run the graphical tool)\n"),
+    io:format("    eflex --help              (Users' Guide)\n"),
+    io:format("    eflex --debug\n"),
+    io:format("    eflex --batch\n"),
     halt(1).
 
-main([]) -> start();
+main([]) -> start([]);
+main(["--debug"]) -> start([{debug,2}]);
+main(["--batch"]) -> start([{window,false}]);
 main(["--help"]) ->
     File = "README.md",
     case file:read_file(File) of
@@ -32,9 +37,6 @@ fatal_error(RetCode, Format, Args) ->
     halt(RetCode).
 
 
-start() ->
-    start([]).
-
 start(Options) ->
     process_flag(trap_exit, true),
     Pid = start_link(Options),
@@ -46,12 +48,3 @@ start(Options) ->
 
 start_link(Options) ->
     eflex_wx:start_link(Options).
-
-stop() ->
-    application:stop(?APPLICATION).
-
-debug() ->
-    start([{debug, 2}]).
-
-batch() ->
-    start([{window, false}]).
