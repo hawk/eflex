@@ -1,13 +1,15 @@
+Eflex
+-----
 
-Eflex - a flextime calculation tool implemented with Erlang/OTP
+A flextime calculation tool implemented with Erlang/OTP
 
 Start the tool with the command
 
-  eflex
+    eflex
 
 or see its usage with
 
-  eflex --usage
+    eflex --usage
 
 Here follows a users guide.
 
@@ -28,9 +30,9 @@ coded as Flex and work will not be assigned to any particular
 project. But this can be controlled by using some options:
 
   - start the Erlang shell with "eflex --debug"
-  - eflex:start([{absence_all_day, "Absence"}]).
-  - eflex:start([{absence_all_day, "Vacation"}]).
-  - eflex:start([{absence_all_day, "my code"}, {unspecified_work, "my project"}]).
+  - `eflex:start([{absence_all_day, "Absence"}]).`
+  - `eflex:start([{absence_all_day, "Vacation"}]).`
+  - `eflex:start([{absence_all_day, "my code"}, {unspecified_work, "my project"}]).`
 
 Once the tool is started, one week at the time will be displayed in
 the main window. By default the current week is displayed. You can

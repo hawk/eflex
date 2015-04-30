@@ -576,7 +576,7 @@ about() ->
 		"?"
 	end,
     "Eflex - a flextime calculation tool implemented with Erlang/OTP\n"
-	++  "by Håkan Mattsson\n\n" ++ 
+	++  "by HÃ¥kan Mattsson\n\n" ++
 	"Latest compilation: " ++ Time.
 
 handle_action_type(S, Event) ->
@@ -1100,6 +1100,9 @@ create_main_window(#state{options = Options, wx = Wx} = S) ->
     wxSizer:add(MainSz, MainGrid, [{border, 2},
 				   {flag, ?wxALL bor ?wxEXPAND}]),
     refresh_sizer(Frame, Panel, MainSz),
+    IconFile = filename:join(code:priv_dir(eflex), "plan.png"),
+    Icon = wxIcon:new(IconFile, [{type,?wxBITMAP_TYPE_PNG}]),
+    wxFrame:setIcon(Frame, Icon),
     wxFrame:show(Frame),
 
     S#state{main_frame         = Frame,
@@ -2758,7 +2761,7 @@ resize(#state{main_grid_size = {OldWidth, _OldHeight},
     %% io:format("Resize\n",  []),
     Diff = OldWidth - NewWidth,
     NewActColWidth = OldActColWidth - Diff,
-    wxGrid:setColSize(MainGrid, ?ACTIVITY_COL, NewActColWidth),
+    NewActColWidth > 0 andalso wxGrid:setColSize(MainGrid, ?ACTIVITY_COL, NewActColWidth),
     wxGrid:forceRefresh(MainGrid),
     S#state{main_grid_size     = NewSize,
             activity_col_width = NewActColWidth}.
@@ -2920,8 +2923,8 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 	 wxGrid:setCellValue(MainGrid, Row, Col, ""),
 	 cell_set_read_only(MainGrid, Row, Col)
      end ||
-	Row <- lists:seq(0, wxGrid:getNumberRows(MainGrid)),
-	Col <- lists:seq(0, wxGrid:getNumberCols(MainGrid))],
+	Row <- lists:seq(0, wxGrid:getNumberRows(MainGrid)-1),
+	Col <- lists:seq(0, wxGrid:getNumberCols(MainGrid)-1)],
     %% wxGrid:clearGrid(MainGrid),
     lists:foldl(InitRow, {?DATE_ROW, UnspecifiedRow}, Eactivities2),
     Eweek2 = Eweek#eflex_week{activities = Eactivities2},
