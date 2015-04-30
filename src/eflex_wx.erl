@@ -527,7 +527,7 @@ handle_other(#state{main_frame = Mframe,
 			    {file, BeamFile} = code:is_loaded(?MODULE),
 			    EbinDir = filename:dirname(BeamFile),
 			    AppDir = filename:dirname(EbinDir),
-			    HelpFile = filename:join([AppDir, "README"]),
+			    HelpFile = filename:join([AppDir, "README.md"]),
 			    Url = "file://" ++ filename:absname(HelpFile),
 			    wx_misc:launchDefaultBrowser(Url),
 			    S;
