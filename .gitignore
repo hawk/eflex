@@ -1,5 +1,11 @@
-*.beam
+ebin/
+doc/
+_build/
+rebar3
+eflex
+rebar.lock
 erl_crash.dump
 core*
+*.sw[a-z]
 *~
 \#*

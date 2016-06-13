@@ -1100,8 +1100,11 @@ create_main_window(#state{options = Options, wx = Wx} = S) ->
     wxSizer:add(MainSz, MainGrid, [{border, 2},
 				   {flag, ?wxALL bor ?wxEXPAND}]),
     refresh_sizer(Frame, Panel, MainSz),
-    IconFile = filename:join(code:priv_dir(eflex), "plan.png"),
-    Icon = wxIcon:new(IconFile, [{type,?wxBITMAP_TYPE_PNG}]),
+    {ok,IconBinary,_} = erl_prim_loader:get_file(filename:join(code:priv_dir(eflex),"plan.png")),
+    %% Apparently wx can't handle binaries ..
+    ok = file:write_file("/tmp/plan.png",IconBinary),
+    Icon = wxIcon:new("/tmp/plan.png", [{type,?wxBITMAP_TYPE_PNG}]),
+    file:delete("/tmp/plan.png"),
     wxFrame:setIcon(Frame, Icon),
     wxFrame:show(Frame),
 

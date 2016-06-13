@@ -1,30 +1,42 @@
-######################################################################
-## Copyright (c) 2009 Hakan Mattsson
-##
-## See the file "LICENSE" for information on usage and redistribution
-## of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-######################################################################
+REBAR3_URL=https://s3.amazonaws.com/rebar3/rebar3
 
-SUBDIRS = src
+ifeq ($(wildcard rebar3),rebar3)
+REBAR3 = $(CURDIR)/rebar3
+endif
 
-all:    Makefile
-	@for d in $(SUBDIRS); do         \
-	   if test ! -d $$d ; then        \
-	       echo "=== Skipping subdir $$d" ; \
-	   else                   \
-	      (cd $$d && $(MAKE) $@) ; \
-	   fi ;                        \
-	done
+REBAR3 ?= $(shell test -e `which rebar3` 2>/dev/null && which rebar3 || echo "./rebar3")
 
-clean: Makefile
-	rm -f *~
-	@for d in $(SUBDIRS); do        \
-	   if test ! -d $$d ; then        \
-	       echo "=== Skipping subdir $$d" ; \
-	   else                        \
-	      (cd $$d && $(MAKE) $@) ; \
-	   fi ;                        \
-	done
+ifeq ($(REBAR3),)
+REBAR3 = $(CURDIR)/rebar3
+endif
 
-install: all
-	bin/eflex --install
+.PHONY: deps test build
+
+all: build docs
+
+build: $(REBAR3)
+	@$(REBAR3) compile
+
+$(REBAR3):
+	wget $(REBAR3_URL) || curl -Lo rebar3 $(REBAR3_URL)
+	chmod a+x rebar3
+
+deps:
+	@$(REBAR3) get-deps
+
+clean:
+	@$(REBAR3) clean
+
+distclean: clean
+	@$(REBAR3) delete-deps
+
+docs:
+	@$(REBAR3) edoc
+
+
+test: 
+	@$(REBAR3) do ct, cover
+
+
+release: test
+	@$(REBAR3) release
