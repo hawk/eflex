@@ -1217,7 +1217,15 @@ cell_set_read_only(Grid, Row, Col) ->
 
 cell_set_read_write(Grid, Row, Col) ->
     wxGrid:setReadOnly(Grid, Row, Col, [{isReadOnly, false}]),
-    wxGrid:setCellBackgroundColour(Grid, Row, Col, ?wxWHITE).
+    BG = case is_dark_mode(wxGrid:getLabelBackgroundColour(Grid)) of
+             true -> wxSystemSettings:getColour(?wxSYS_COLOUR_BTNSHADOW);
+             false -> ?wxWHITE
+         end,
+    wxGrid:setCellBackgroundColour(Grid, Row, Col, BG).
+
+is_dark_mode({R,G,B,_}) ->
+    ((R+G+B) div 3) < 100.
+
 
 recreate_activity_type_window(#state{activity_frame = undefined} = S) ->
     S;
