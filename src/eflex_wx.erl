@@ -345,7 +345,7 @@ handle_main(#state{options = O,
     %% io:format("Received main event: ~p\n", [Event]),
     case Event of
 	#wx{id = ?MAIN_FLEX_ID,
-	    event = #wxGrid{type = grid_cell_change,
+	    event = #wxGrid{type = grid_cell_changed,
 			    row = Row,
 			    col = Col}} ->
 	    S2 = opt_update_activity(S, MainGrid, Row, Col),
@@ -407,7 +407,7 @@ handle_other(#state{main_frame = Mframe,
 		undefined ->
 		    S;
 		Time ->
-		    wxGrid:setCellValue(MainGrid, Row, Col, Time),
+		    wxGrid:setCellValue(MainGrid, {Row, Col}, Time),
 		    opt_update_activity(S2, MainGrid, Row, Col)
 	    end;
 	{toggle_holiday, Row, Col} ->
@@ -1197,7 +1197,7 @@ create_main_grid(Panel, #options{n_rows = Nrows}) ->
     wxGrid:connect(Grid, grid_cell_left_dclick, [{callback, Left}]),
     wxGrid:connect(Grid, grid_cell_right_click, [{callback, Right}]),
     wxGrid:connect(Grid, grid_cell_right_dclick, [{callback, Right}]),
-    wxGrid:connect(Grid, grid_cell_change),
+    wxGrid:connect(Grid, grid_cell_changed),
     wxGrid:connect(Grid, size),
     KeyPress = fun(Wx, EventRef) -> key_press(WinPid, Wx, EventRef) end,
     wxGrid:connect(Grid, key_down, [{callback, KeyPress}]),
@@ -1907,14 +1907,14 @@ create_list_grid(Panel, Eyear, ActName, Initial, Unit) ->
 		ignore;
 	   (Row, Col, Int) ->
 		Val = eflex_lib:convert_time(Int, Unit),
-		wxGrid:setCellValue(Grid, Val, Row, Col)
+		wxGrid:setCellValue(Grid, {Row, Col}, Val)
 	end,
     InitWeek =
 	fun({WeekNo, EA}, {Row, YearSum}) ->
 		WeekSum = eflex_lib:calc_week_sum(EA),
 		YearSum2 = YearSum + WeekSum,
 		WeekStr = integer_to_list(WeekNo),
-		wxGrid:setCellValue(Grid, WeekStr, Row, ?WEEK_NO_COL),
+		wxGrid:setCellValue(Grid, {Row, ?WEEK_NO_COL}, WeekStr),
 		SetCell(Row, ?YEAR_SUM_COL, YearSum2),
 		SetCell(Row, ?WEEK_SUM_COL, WeekSum),
 		SetCell(Row, ?MONDAY_COL, EA#eflex_activity.monday),
@@ -1926,8 +1926,8 @@ create_list_grid(Panel, Eyear, ActName, Initial, Unit) ->
 		SetCell(Row, ?MONDAY_COL + 6, EA#eflex_activity.sunday),
 		{Row + 1, YearSum2}
 	end,
-    wxGrid:setCellValue(Grid, "Initial", 0, 0),
-    wxGrid:setCellValue(Grid, eflex_lib:convert_time(Initial, Unit), 0, 1),
+    wxGrid:setCellValue(Grid, {0, 0}, "Initial"),
+    wxGrid:setCellValue(Grid, {0, 1}, eflex_lib:convert_time(Initial, Unit)),
     lists:foldl(InitWeek, {1, Initial}, MatchingActs),
 
     wxGrid:enableEditing(Grid, false),
@@ -2787,7 +2787,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
                     fun(Val, {Row, Col}) ->
                             if
                                 Col =:= ?ACTIVITY_COL ->
-                                    wxGrid:setCellValue(MainGrid, Val, Row, Col);
+                                    wxGrid:setCellValue(MainGrid, {Row, Col}, Val);
                                 Col =:= ?YEAR_SUM_COL, Name =:= ?ARRIVED_ACT->
                                     ignore;
                                 Col =:= ?WEEK_SUM_COL, Name =:= ?ARRIVED_ACT ->
@@ -2800,12 +2800,12 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 				    Int = eflex_lib:convert_time(OldYearSum,
 								 integer),
                                     Val2 = integer_to_list(Int),
-                                    wxGrid:setCellValue(MainGrid, Val2, Row, Col);
+                                    wxGrid:setCellValue(MainGrid, {Row, Col}, Val2);
                                 Col =:= ?WEEK_SUM_COL, Name =:= ?DATE_ACT ->
 				    Int = eflex_lib:convert_time(OldWeekSum,
 								 integer),
                                     Val2 = integer_to_list(Int),
-                                    wxGrid:setCellValue(MainGrid, Val2, Row, Col);
+                                    wxGrid:setCellValue(MainGrid, {Row, Col}, Val2);
                                 Name =:= ?DATE_ACT ->
 				    WeekDayNo = Col - 2,
 				    IsHoliday =
@@ -2825,7 +2825,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 					    0 -> "(" ++ Val2 ++ ")";
 					    _ -> Val2
 					end,
-                                    wxGrid:setCellValue(MainGrid, Val3, Row, Col);
+                                    wxGrid:setCellValue(MainGrid, {Row, Col}, Val3);
                                 true ->
                                     Val2 =
                                         case Val of
@@ -2836,7 +2836,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 										Eyear,
 										Name)
                                         end,
-                                    wxGrid:setCellValue(MainGrid, Val2, Row, Col),
+                                    wxGrid:setCellValue(MainGrid, {Row, Col}, Val2),
                                     if
                                         Name =:= ?WORK_ACT, Val < 0 ->
                                             wxGrid:setCellTextColour(MainGrid, 
@@ -2917,7 +2917,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
     wxFrame:setTitle(S#state.main_frame, Title),
     [
      begin
-	 wxGrid:setCellValue(MainGrid, Row, Col, ""),
+	 wxGrid:setCellValue(MainGrid, {Row, Col}, ""),
 	 cell_set_read_only(MainGrid, Row, Col)
      end ||
 	Row <- lists:seq(0, wxGrid:getNumberRows(MainGrid)-1),
