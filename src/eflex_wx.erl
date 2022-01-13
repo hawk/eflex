@@ -388,14 +388,14 @@ handle_other(#state{main_frame = Mframe,
     case Event of
 	{select_activity, Row, _Col} ->
 	    wx:batch(fun() -> activity_popup(S, Row) end);
-	{copy_cell, Row, Col, _X, _Y} ->
+	{copy_cell, Row, Col} ->
 	    case wxGrid:getCellValue(MainGrid, Row, Col) of
 		[$- | Time] -> ok; % Use abs val
 		Time -> ok
 	    end,
 	    clipboard_copy(Time),
 	    S#state{selected_time = Time};
-	{paste_cell, Row, Col, _X, _Y} ->
+	{paste_cell, Row, Col} ->
 	    S2 = 
 		case clipboard_paste() of
 		    {ok, T} ->
@@ -1938,9 +1938,7 @@ grid_cell_left_click(WinPid,
 		     UnspecRow,
 		     #wx{event = #wxGrid{type = _Type,
 					 row = Row,
-					 col = Col,
-					 x = X,
-					 y = Y}},
+					 col = Col}},
 		     EventRef) ->
     if
 	Col =:= ?ACTIVITY_COL ->
@@ -1952,15 +1950,15 @@ grid_cell_left_click(WinPid,
 	Row =:= ?DATE_ROW ->
 	    WinPid ! {toggle_holiday, Row, Col};
 	Row =:= ?BREAK_ROW ->
-	    WinPid ! {copy_cell, Row, Col, X, Y};
+	    WinPid ! {copy_cell, Row, Col};
 	Row =:= ?WORK_ROW ->
-	    WinPid ! {copy_cell, Row, Col, X, Y};
+	    WinPid ! {copy_cell, Row, Col};
 	Row =:= ?FLEX_ROW ->
-	    WinPid ! {copy_cell, Row, Col, X, Y};
+	    WinPid ! {copy_cell, Row, Col};
 	Row =:= UnspecRow ->
-	    WinPid ! {copy_cell, Row, Col, X, Y};
+	    WinPid ! {copy_cell, Row, Col};
 	true ->
-	    WinPid ! {copy_cell, Row, Col, X, Y},
+	    WinPid ! {copy_cell, Row, Col},
 	    wxEvent:skip(EventRef)
     end.
 
@@ -1975,9 +1973,7 @@ grid_cell_middle_click(WinPid,
     Row = wxGrid:yToRow(Grid, Y),
     Fake = #wxGrid{type = grid_cell_right_click,
 		   row = Row,
-		   col = Col,
-		   x = X,
-		   y = Y},
+		   col = Col},
     grid_cell_right_click(WinPid,
 			  UnspecRow,
 			  Wx#wx{event = Fake},
@@ -1987,9 +1983,7 @@ grid_cell_right_click(WinPid,
 		      UnspecRow,
 		      #wx{event = #wxGrid{type = _Type,
 					  row = Row,
-					  col = Col,
-					  x = X,
-					  y = Y}} = Wx,
+					  col = Col}} = Wx,
 		      EventRef) ->
     if
         Row =/= ?DATE_ROW,
@@ -2000,7 +1994,7 @@ grid_cell_right_click(WinPid,
         Col =/= ?ACTIVITY_COL,
         Col =/= ?YEAR_SUM_COL,
         Col =/= ?WEEK_SUM_COL ->
-	    WinPid ! {paste_cell, Row, Col, X, Y};
+	    WinPid ! {paste_cell, Row, Col};
 	true ->
 	    grid_cell_left_click(WinPid,
 				 UnspecRow,
