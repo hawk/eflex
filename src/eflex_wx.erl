@@ -27,7 +27,6 @@
          mouse_check_interval,
          mouse_pos,
          main_frame,
-         main_panel,
 	 main_status_bar,
          main_grid,
          main_grid_size,
@@ -36,12 +35,9 @@
          popup,
          selected_time,
 	 activity_frame,
-	 activity_panel,
 	 holiday_frame,
-	 holiday_panel,
 	 holiday_cals,
 	 config_frame,
-	 config_panel,
 	 absence_all_day,
 	 unspecified_work,
 	 away_a_while,
@@ -512,17 +508,14 @@ handle_other(#state{main_frame = Mframe,
 			    close_window(O);
 			?CLOSE_ITEM when UserData =:= activity_type_editor ->
 			    wxFrame:destroy(Aframe),
-			    S#state{activity_frame = undefined, 
-				    activity_panel = undefined};
+			    S#state{activity_frame = undefined};
 			?CLOSE_ITEM when UserData =:= holiday_editor ->
 			    wxFrame:destroy(Hframe),
 			    S#state{holiday_frame = undefined,
-				    holiday_panel = undefined,
 				    holiday_cals  = []};
 			?CLOSE_ITEM when UserData =:= config_editor ->
 			    wxFrame:destroy(Cframe),
-			    S#state{config_frame = undefined,
-				    config_panel = undefined};
+			    S#state{config_frame = undefined};
 			?CONTENTS_ITEM ->
 			    {file, BeamFile} = code:is_loaded(?MODULE),
 			    EbinDir = filename:dirname(BeamFile),
@@ -585,7 +578,7 @@ handle_action_type(S, Event) ->
    	#wx{id = ?ACT_FRAME_ID,
 	    event = #wxClose{type = close_window}} ->
 	    wxFrame:destroy(S#state.activity_frame),
-	    S#state{activity_frame = undefined, activity_panel = undefined};
+	    S#state{activity_frame = undefined};
 	#wx{obj = ObjRef,
 	    userData = #activity_data{label = Label, type = Etype} = AD,
 	    event = #wxCommand{type = command_text_enter = CmdType,
@@ -832,11 +825,8 @@ close_action_list(S, ActName) ->
     Eyear2 = Eyear#eflex_year{config = Econfig2},
     S#state{year = Eyear2}.
 
-refresh_sizer(Frame, Panel, Sizer) ->
-    wxSizer:layout(Sizer),
-    wxPanel:setSizer(Panel, Sizer),
-    wxSizer:fit(Sizer, Frame),
-    wxSizer:setSizeHints(Sizer, Frame),
+refresh_sizer(Frame, Sizer) ->
+	wxWindow:setSizerAndFit(Frame, Sizer),
     wxWindow:refresh(Frame),
     wxWindow:update(Frame).
 
@@ -875,7 +865,7 @@ handle_config(S, Event) ->
    	#wx{id = ?CONFIG_FRAME_ID,
 	    event = #wxClose{type = close_window}} ->
 	    wxFrame:destroy(S#state.config_frame),
-	    S#state{config_frame = undefined, config_panel = undefined};
+	    S#state{config_frame = undefined};
 	#wx{userData = #config_data{text = ?UNIT_CONFIG_ITEM},
 	    event = #wxCommand{type = command_choice_selected,
 			       cmdString = ValStr0}} ->
@@ -997,7 +987,6 @@ handle_holiday(S, Event) ->
 	    event = #wxClose{type = close_window}} ->
 	    wxFrame:destroy(S#state.holiday_frame),
 	    S#state{holiday_frame = undefined,
-		    holiday_panel = undefined,
 		    holiday_cals = []};
 	#wx{obj = Cal, userData = #calendar_data{},
 	    event = #wxCalendar{type = calendar_sel_changed}} ->
@@ -1066,7 +1055,6 @@ update_year(S, OldS) ->
 create_main_window(#state{options = Options, wx = Wx} = S) ->
     %% Frame
     Frame = wxFrame:new(Wx, ?MAIN_FRAME_ID, "Eflex", []),
-    Panel = wxPanel:new(Frame, []),
     StatusBar = wxFrame:createStatusBar(Frame,[]),
     wxFrame:connect(Frame, close_window),
     wxFrame:connect(Frame, iconize),
@@ -1093,13 +1081,13 @@ create_main_window(#state{options = Options, wx = Wx} = S) ->
     %% Split the window in three major parts
     MainSz = wxBoxSizer:new(?wxVERTICAL),
     TopSz = wxBoxSizer:new(?wxHORIZONTAL),
-    AwayButton = create_main_buttons(TopSz, Panel),
+    AwayButton = create_main_buttons(TopSz, Frame),
     wxSizer:add(MainSz, TopSz, [{flag, ?wxEXPAND}]),
     
-    {MainGrid, ActColWidth} = create_main_grid(Panel, Options),
+    {MainGrid, ActColWidth} = create_main_grid(Frame, Options),
     wxSizer:add(MainSz, MainGrid, [{border, 2},
 				   {flag, ?wxALL bor ?wxEXPAND}]),
-    refresh_sizer(Frame, Panel, MainSz),
+    refresh_sizer(Frame, MainSz),
     {ok,IconBinary,_} = erl_prim_loader:get_file(filename:join(code:priv_dir(eflex),"plan.png")),
     %% Apparently wx can't handle binaries ..
     ok = file:write_file("/tmp/plan.png",IconBinary),
@@ -1109,7 +1097,6 @@ create_main_window(#state{options = Options, wx = Wx} = S) ->
     wxFrame:show(Frame),
 
     S#state{main_frame         = Frame,
-	    main_panel         = Panel,
 	    main_status_bar    = StatusBar,
             main_grid          = MainGrid,
             main_grid_size     = wxWindow:getSize(MainGrid),
@@ -1230,8 +1217,7 @@ is_dark_mode({R,G,B,_}) ->
 recreate_activity_type_window(#state{activity_frame = undefined} = S) ->
     S;
 recreate_activity_type_window(#state{activity_frame = Frame} = S) ->
-    S2 = S#state{activity_frame = undefined,
-		 activity_panel = undefined},
+    S2 = S#state{activity_frame = undefined},
     wx:batch(fun() ->
 		     wxFrame:destroy(Frame),
 		     create_activity_type_window(S2) 
@@ -1245,7 +1231,6 @@ create_activity_type_window(#state{wx = Wx, year = Eyear} = S) ->
     Title = "Eflex "++ integer_to_list(Eyear#eflex_year.no) ++
 	" - activity type editor " ,
     Frame = wxFrame:new(Wx, ?ACT_FRAME_ID, Title, []),
-    Panel = wxPanel:new(Frame, []),
 
     %% Create menubar
     MenuBar = wxMenuBar:new(),
@@ -1265,26 +1250,26 @@ create_activity_type_window(#state{wx = Wx, year = Eyear} = S) ->
     WrapperSz = wxBoxSizer:new(?wxVERTICAL),
     MainSz = wxBoxSizer:new(?wxVERTICAL),
     wxSizer:add(WrapperSz, MainSz, [{border, 2}, {flag, ?wxALL}]),
-    create_activity_type_header(Panel, MainSz),
+    create_activity_type_header(Frame, MainSz),
     #eflex_year{config = #eflex_config{activity_types = Etypes},
 	       weeks = Eweeks} = Eyear,
     EweekList = tuple_to_list(Eweeks),
     {[Unspec | Mandatory], Attendance, Project} =
         eflex_lib:multi_split_activity_types(Etypes),
-    [create_activity_type_row(Panel, MainSz, Etype, EweekList, true)
+    [create_activity_type_row(Frame, MainSz, Etype, EweekList, true)
      || Etype <- Mandatory,
         Etype#eflex_activity_type.name =/= ?DATE_ACT],
-    create_activity_type_row(Panel, MainSz, Unspec, EweekList, true),
-    [create_activity_type_row(Panel, MainSz, Etype, EweekList, false)
+    create_activity_type_row(Frame, MainSz, Unspec, EweekList, true),
+    [create_activity_type_row(Frame, MainSz, Etype, EweekList, false)
      || Etype <- Attendance],
-    [create_activity_type_row(Panel, MainSz, Etype, EweekList, false)
+    [create_activity_type_row(Frame, MainSz, Etype, EweekList, false)
      || Etype <- Project],
 
     %% Hints
-    refresh_sizer(Frame, Panel, WrapperSz),
+    refresh_sizer(Frame, WrapperSz),
     wxFrame:connect(Frame, close_window),
     wxFrame:show(Frame),
-    S#state{activity_frame = Frame, activity_panel = Panel}.
+    S#state{activity_frame = Frame}.
 
 create_activity_type_header(Panel, OuterSizer) ->
     Sizer = wxBoxSizer:new(?wxHORIZONTAL),
@@ -1490,8 +1475,7 @@ unit_to_string(Unit) when is_atom(Unit) ->
 recreate_config_window(#state{config_frame = undefined} = S) ->
     S;
 recreate_config_window(#state{config_frame = Frame} = S) ->
-    S2 = S#state{config_frame = undefined,
-		 config_panel = undefined},
+    S2 = S#state{config_frame = undefined},
     wx:batch(fun() ->
 		     wxFrame:destroy(Frame),
 		     create_config_window(S2) 
@@ -1505,7 +1489,6 @@ create_config_window(#state{wx = Wx, year = Eyear} = S) ->
     Title = "Eflex "++ integer_to_list(Eyear#eflex_year.no) ++
 	" - config editor" ,
     Frame = wxFrame:new(Wx, ?CONFIG_FRAME_ID, Title, []),
-    Panel = wxPanel:new(Frame, []),
 
     %% Create menubar
     MenuBar = wxMenuBar:new(),
@@ -1546,61 +1529,61 @@ create_config_window(#state{wx = Wx, year = Eyear} = S) ->
     MainSizer = wxBoxSizer:new(?wxVERTICAL),
 
     %% Unit
-    GeneralBox = wxStaticBox:new(Panel, ?wxID_ANY, ?GENERAL),
+    GeneralBox = wxStaticBox:new(Frame, ?wxID_ANY, ?GENERAL),
     GeneralSizer = wxStaticBoxSizer:new(GeneralBox, ?wxVERTICAL),
     wxSizer:add(MainSizer, GeneralSizer,
 		[{border,5}, {flag, ?wxALL bor ?wxEXPAND}]),
-    create_config_choice(Panel, GeneralSizer, ?GENERAL, ?UNIT_CONFIG_ITEM,
+    create_config_choice(Frame, GeneralSizer, ?GENERAL, ?UNIT_CONFIG_ITEM,
 			 unit_to_string(Unit), ["Minutes", "Decimal"]),
 
     %% Work time per day
     wxSizer:addStretchSpacer(MainSizer),
-    WorkBox = wxStaticBox:new(Panel, ?wxID_ANY, ?WORK_TIME_PER_DAY),
+    WorkBox = wxStaticBox:new(Frame, ?wxID_ANY, ?WORK_TIME_PER_DAY),
     WorkTimeSizer = wxStaticBoxSizer:new(WorkBox, ?wxVERTICAL),
     wxSizer:add(MainSizer, WorkTimeSizer,
 		[{border,5}, {flag, ?wxALL bor ?wxEXPAND}]),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?MON_CONFIG_ITEM, Mon),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?TUE_CONFIG_ITEM, Tue),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?WED_CONFIG_ITEM, Wed),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?THU_CONFIG_ITEM, Thu),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?FRI_CONFIG_ITEM, Fri),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?SAT_CONFIG_ITEM, Sat),
-    create_config_text(Panel, WorkTimeSizer, Unit,
+    create_config_text(Frame, WorkTimeSizer, Unit,
 		       ?WORK_TIME_PER_DAY, ?SUN_CONFIG_ITEM, Sun),
 
     %% Workday
     wxSizer:addStretchSpacer(MainSizer),
-    WorkdayBox = wxStaticBox:new(Panel, ?wxID_ANY, ?WORKDAY),
+    WorkdayBox = wxStaticBox:new(Frame, ?wxID_ANY, ?WORKDAY),
     WorkdaySizer = wxStaticBoxSizer:new(WorkdayBox, ?wxVERTICAL),
     wxSizer:add(MainSizer, WorkdaySizer,
 		[{border,5}, {flag, ?wxALL bor  ?wxEXPAND}]),
-    create_config_text(Panel, WorkdaySizer, Unit,
+    create_config_text(Frame, WorkdaySizer, Unit,
 		       ?WORKDAY, ?LUNCH_CONFIG_ITEM, Lunch),
-    create_config_text(Panel, WorkdaySizer, Unit,
+    create_config_text(Frame, WorkdaySizer, Unit,
 		       ?WORKDAY, ?BREAK_CONFIG_ITEM, Wdur),
-    create_config_text(Panel, WorkdaySizer, Unit,
+    create_config_text(Frame, WorkdaySizer, Unit,
 		       ?WORKDAY, ?BEFORE_CONFIG_ITEM, Wbefore),
 
     %% Freeday
     wxSizer:addStretchSpacer(MainSizer),
-    FreedayBox = wxStaticBox:new(Panel, ?wxID_ANY, ?FREEDAY),
+    FreedayBox = wxStaticBox:new(Frame, ?wxID_ANY, ?FREEDAY),
     FreedaySizer = wxStaticBoxSizer:new(FreedayBox, ?wxVERTICAL),
     wxSizer:add(MainSizer, FreedaySizer,
 		[{border,5}, {flag, ?wxALL bor ?wxEXPAND}]),
-    create_config_text(Panel, FreedaySizer, Unit,
+    create_config_text(Frame, FreedaySizer, Unit,
 		       ?FREEDAY, ?BREAK_CONFIG_ITEM, Fdur),
-    create_config_text(Panel, FreedaySizer, Unit,
+    create_config_text(Frame, FreedaySizer, Unit,
 		       ?FREEDAY, ?BEFORE_CONFIG_ITEM, Fbefore),
 
     %% Auto code
     wxSizer:addStretchSpacer(MainSizer),
-    AutoBox = wxStaticBox:new(Panel, ?wxID_ANY, ?AUTO_CODE),
+    AutoBox = wxStaticBox:new(Frame, ?wxID_ANY, ?AUTO_CODE),
     AutoSizer = wxStaticBoxSizer:new(AutoBox, ?wxVERTICAL),
     wxSizer:add(MainSizer, AutoSizer,
 		[{border,5}, {flag, ?wxALL bor ?wxEXPAND}]),
@@ -1617,23 +1600,23 @@ create_config_window(#state{wx = Wx, year = Eyear} = S) ->
 	    undefined -> ?FLEX_ACT;
 	    _ -> Abs
 	end,		
-    create_config_choice(Panel, AutoSizer, ?AUTO_CODE, ?ABSENCE_CONFIG_ITEM,
+    create_config_choice(Frame, AutoSizer, ?AUTO_CODE, ?ABSENCE_CONFIG_ITEM,
 			 Abs2, [?FLEX_ACT | Achoices]),
     Unspec2 =
 	case Unspec of
 	    undefined -> ?UNSPEC_ACT;
 	    _ -> Unspec
 	end,		
-    create_config_choice(Panel, AutoSizer, ?AUTO_CODE, ?UNSPEC_CONFIG_ITEM,
+    create_config_choice(Frame, AutoSizer, ?AUTO_CODE, ?UNSPEC_CONFIG_ITEM,
 			 Unspec2, [?UNSPEC_ACT | Uchoices]),
 
-    create_config_text(Panel, MainSizer, Unit,
+    create_config_text(Frame, MainSizer, Unit,
 		       ?MINIBREAK, ?BEFORE_CONFIG_ITEM, MiniBreak),
     %% Hints
-    refresh_sizer(Frame, Panel, MainSizer),
+    refresh_sizer(Frame, MainSizer),
     wxFrame:connect(Frame, close_window),
     wxFrame:show(Frame),
-    S#state{config_frame = Frame, config_panel = Panel}.
+    S#state{config_frame = Frame}.
 
 create_config_text(Panel, OuterSizer, Unit, BoxLabel, Label, Val) ->
     InnerSizer = create_config_header(Panel, OuterSizer, Label),
@@ -1678,7 +1661,6 @@ recreate_holiday_window(#state{holiday_frame = undefined} = S) ->
     S;
 recreate_holiday_window(#state{holiday_frame = Frame} = S) ->
     S2 = S#state{holiday_frame = undefined,
-		 holiday_panel = undefined,
 		 holiday_cals  = []},
     wx:batch(fun() ->
 		     wxFrame:destroy(Frame),
@@ -1694,7 +1676,6 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
     Title = "Eflex "++ integer_to_list(YearNo) ++ 
 	" - holiday editor" ,
     Frame = wxFrame:new(Wx, ?HOLIDAY_FRAME_ID, Title, []),
-    Panel = wxPanel:new(Frame, []),
 
     %% Create menubar
     MenuBar = wxMenuBar:new(),
@@ -1722,7 +1703,7 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
 		      ?wxCAL_NO_MONTH_CHANGE bor
 		      %%?wxCAL_SHOW_SURROUNDING_WEEKS bor
 		      ?wxCAL_SEQUENTIAL_MONTH_SELECTION}],
-		Cal = wxCalendarCtrl:new(Panel, ?wxID_ANY, Opts),
+		Cal = wxCalendarCtrl:new(Frame, ?wxID_ANY, Opts),
 		SetHoliday =
 		    fun(DayNo) ->
 			    Attr = wxCalendarDateAttr:new(),
@@ -1746,10 +1727,10 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
 		[{border, 5}, {flag, ?wxALL bor ?wxEXPAND}]),
     C1 = CalFun(1, Q1),
     wxSizer:addStretchSpacer(Q1),
-    wxSizer:add(Q1, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q1, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C2 = CalFun(2, Q1),
     wxSizer:addStretchSpacer(Q1),
-    wxSizer:add(Q1, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q1, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C3 = CalFun(3, Q1),
 
     Q2 = wxBoxSizer:new(?wxHORIZONTAL),
@@ -1757,10 +1738,10 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
 		[{border, 5}, {flag, ?wxALL bor ?wxEXPAND}]),
     C4 = CalFun(4, Q2),
     wxSizer:addStretchSpacer(Q2),
-    wxSizer:add(Q2, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q2, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C5 = CalFun(5, Q2),
     wxSizer:addStretchSpacer(Q2),
-    wxSizer:add(Q2, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q2, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C6 = CalFun(6, Q2),
 
     Q3 = wxBoxSizer:new(?wxHORIZONTAL),
@@ -1768,10 +1749,10 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
 		[{border, 5}, {flag, ?wxALL bor ?wxEXPAND}]),
     C7 = CalFun(7, Q3),
     wxSizer:addStretchSpacer(Q3),
-    wxSizer:add(Q3, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q3, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C8 = CalFun(8, Q3),
     wxSizer:addStretchSpacer(Q3),
-    wxSizer:add(Q3, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q3, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C9 = CalFun(9, Q3),
 
     Q4 = wxBoxSizer:new(?wxHORIZONTAL),
@@ -1779,19 +1760,18 @@ create_holiday_window(#state{wx = Wx, year = Eyear} = S) ->
 		[{border, 5}, {flag, ?wxALL bor ?wxEXPAND}]),
     C10 = CalFun(10, Q4),
     wxSizer:addStretchSpacer(Q4),
-    wxSizer:add(Q4, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q4, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C11 = CalFun(11, Q4),
     wxSizer:addStretchSpacer(Q4),
-    wxSizer:add(Q4, wxStaticLine:new(Panel, [{style, ?wxLI_VERTICAL}])),
+    wxSizer:add(Q4, wxStaticLine:new(Frame, [{style, ?wxLI_VERTICAL}])),
     C12 = CalFun(12, Q4),
 
     %% Hints
-    refresh_sizer(Frame, Panel, MainSizer),
+    refresh_sizer(Frame, MainSizer),
     wxFrame:connect(Frame, close_window),
     wxFrame:show(Frame),
     Cals = [C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12],
     S#state{holiday_frame = Frame,
-	    holiday_panel = Panel,
 	    holiday_cals = Cals}.
 
 select_cal_date(Cal) ->
@@ -1841,7 +1821,6 @@ do_create_activity_list_window(#state{wx = Wx, year = Eyear} = S, Etype, ActName
     %% Create frame
     Title = "Eflex "++ integer_to_list(Eyear#eflex_year.no) ++ " - " ++ ActName,
     Frame = wxFrame:new(Wx, ?LIST_FRAME_ID, Title, []),
-    Panel = wxPanel:new(Frame, []),
 
     %% Create menubar
     MenuBar = wxMenuBar:new(),
@@ -1858,7 +1837,7 @@ do_create_activity_list_window(#state{wx = Wx, year = Eyear} = S, Etype, ActName
     Initial = Etype#eflex_activity_type.initial,
     Unit = Etype#eflex_activity_type.unit,
     MainSz = wxBoxSizer:new(?wxVERTICAL),
-    Grid = create_list_grid(Panel, Eyear, ActName, Initial, Unit),
+    Grid = create_list_grid(Frame, Eyear, ActName, Initial, Unit),
     wxSizer:add(MainSz, Grid, [{border, 2},
 			       {flag, ?wxALL bor ?wxEXPAND},
 			       {proportion, 1}]),
@@ -1866,28 +1845,28 @@ do_create_activity_list_window(#state{wx = Wx, year = Eyear} = S, Etype, ActName
     wxGrid:connect(Grid, grid_cell_right_click, [{userData, week_selected}]),
     
     %% Hints
-    refresh_sizer(Frame, Panel, MainSz),
+    refresh_sizer(Frame, MainSz),
     wxFrame:connect(Frame, close_window,
 		    [{userData, #activity_list{name = ActName}}]),
     wxFrame:show(Frame),
 
     Econfig = Eyear#eflex_year.config,
     Etypes = Econfig#eflex_config.activity_types,
-    Etype2 = Etype#eflex_activity_type{frame = Frame, panel = Panel},
+    Etype2 = Etype#eflex_activity_type{frame = Frame},
     Etypes2 = lists:keyreplace(ActName, #eflex_activity_type.name, Etypes, Etype2),
     Econfig2 = Econfig#eflex_config{activity_types = Etypes2}, 
     Eyear2 = Eyear#eflex_year{config = Econfig2},
     S#state{year = Eyear2}.
 
-create_list_grid(Panel, Eyear, ActName, Initial, Unit) ->
+create_list_grid(Frame, Eyear, ActName, Initial, Unit) ->
     EweekList = tuple_to_list(Eyear#eflex_year.weeks),
     MatchingActs =
 	[{No, EA} || #eflex_week{no = No, activities = Acts} <- EweekList,
 		     EA <- Acts,
 		     EA#eflex_activity.name =:= ActName],
 
-    Grid = wxGrid:new(Panel, ?wxID_ANY, [{size, {-1, 400}}]),
-    %% Grid = wxGrid:new(Panel, ?wxID_ANY, []),
+    Grid = wxGrid:new(Frame, ?wxID_ANY, [{size, {-1, 400}}]),
+    %% Grid = wxGrid:new(Frame, ?wxID_ANY, []),
     Nrows = length(MatchingActs) + 1,
     wxGrid:createGrid(Grid, Nrows, ?SUNDAY_COL + 1,
                       [{selmode, ?wxGrid_wxGridSelectCells}]),
