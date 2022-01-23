@@ -2821,7 +2821,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 				    Color =
 					case IsHoliday of
 					    true  -> ?wxRED;
-					    false -> ?wxBLACK
+					    false -> wxGrid:getDefaultCellTextColour(MainGrid)
 					end,
 				    wxGrid:setCellTextColour(MainGrid,
 							     Row,
@@ -2855,7 +2855,7 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
                                             wxGrid:setCellTextColour(MainGrid,
 								     Row,
 								     Col,
-								     ?wxBLACK);
+								     wxGrid:getDefaultCellTextColour(MainGrid));
                                         Name =:= ?FLEX_ACT,
 					Col =/= ?YEAR_SUM_COL,
 					Col =/= ?WEEK_SUM_COL ->
@@ -2875,7 +2875,8 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
 						    wxGrid:setCellTextColour(MainGrid,
 									     Row,
 									     Col,
-									     ?wxBLACK)
+									     wxGrid:getDefaultCellTextColour(
+											 MainGrid))
 					    end;
 					Col =/= ?YEAR_SUM_COL,
 					Col =/= ?WEEK_SUM_COL ->
