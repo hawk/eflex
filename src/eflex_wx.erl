@@ -2917,34 +2917,52 @@ update_week(#state{options = #options{date = Date, n_rows = Nrows},
     S#state{year = Eyear#eflex_year{weeks = Eweeks2}}.
 
 clipboard_copy(Text) ->
-    Clipboard = wxClipboard:'get'(),
-    ok = wxClipboard:usePrimarySelection(Clipboard, [{primary, true}]),
-    case wxClipboard:open(Clipboard) of
-	true ->
-	    TextObj = wxTextDataObject:new([{text, Text}]),
-	    true = wxClipboard:setData(Clipboard, wx:typeCast(TextObj, wxDataObject)),
-	    ok = wxClipboard:close(Clipboard),
-	    ok;
-	false ->
-	    ok = wxClipboard:close(Clipboard),
-	    {error, "Failed to open clipboard"}
-    end.
+    TextObj = wxTextDataObject:new([{text, Text}]),
+    DataObj = wx:typeCast(TextObj, wxDataObject),
+    Fun = fun(Clipboard) -> wxClipboard:setData(Clipboard, DataObj) end,
+    try_clipboard_op_selection_opts(Fun).
 
 clipboard_paste() ->
-    Clipboard = wxClipboard:'get'(),
-    ok = wxClipboard:usePrimarySelection(Clipboard, [{primary, true}]),
-    case wxClipboard:open(Clipboard) of
-	true ->
-	    TextObj = wxTextDataObject:new(),
-	    wxClipboard:getData(Clipboard, wx:typeCast(TextObj, wxDataObject)),
-	    Text = wxTextDataObject:getText(TextObj),
-	    ok = wxClipboard:close(Clipboard),
-	    {ok, Text};
-	false ->
-	    ok = wxClipboard:close(Clipboard),
-	    {error, "Failed to open clipboard"}
+    TextObj = wxTextDataObject:new(),
+    DataObj = wx:typeCast(TextObj, wxDataObject),
+    Fun = fun(Clipboard) -> wxClipboard:getData(Clipboard, DataObj) end,
+    case try_clipboard_op_selection_opts(Fun) of
+        ok ->
+            Text = wxTextDataObject:getText(TextObj),
+            {ok, Text};
+        {error, _} = Error ->
+            Error
     end.
-    
+
+%% This will try first primary=true and if that fails, primary=false for the
+%% usePrimarySelection. In practise this means that on systems that support it,
+%% one can use the mouse selection and middle mouse button click to copy/paste
+%% values in and out from eflex. On systems that do not support that however,
+%% (eg. macOS Monterey) the behavior falls back to using ctrl/cmd+c/v.
+try_clipboard_op_selection_opts(Fun) ->
+    Clipboard = wxClipboard:'get'(),
+    case wxClipboard:open(Clipboard) of
+        true ->
+            try
+                loop_clipboard_selection_opts([true, false], Clipboard, Fun)
+            after
+                ok = wxClipboard:close(Clipboard)
+            end;
+        false ->
+            {error, "Failed to open clipboard"}
+    end.
+
+loop_clipboard_selection_opts([IsPrimary | Rest], Clipboard, Fun) ->
+    ok = wxClipboard:usePrimarySelection(Clipboard, [{primary, IsPrimary}]),
+    case Fun(Clipboard) of
+        true ->
+            ok;
+        false ->
+            loop_clipboard_selection_opts(Rest, Clipboard, Fun)
+    end;
+loop_clipboard_selection_opts([], _Clipboard, _Fun) ->
+    {error, "Failed to operate on clipboard"}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% System upgrade
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
